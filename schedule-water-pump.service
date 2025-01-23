@@ -1,0 +1,14 @@
+[Unit]
+Description=Hydroponic System Application
+
+[Service]
+Type=simple
+PIDFile=/run/hydroponic_system_application.pid
+Restart=always
+RestartSec=30
+WorkingDirectory=/usr/lib/hydroponic-system-application
+ExecStart=/usr/bin/python3 main.py -l "/var/log/hydroponic_system_application/"
+ExecReload=/usr/bin/python3 main.py -l "/var/log/hydroponic_system_application/"
+
+[Install]
+WantedBy=multi-user.target
