@@ -1,0 +1,45 @@
+{
+  "water_level": {
+    "check_interval_minutes": 5,
+    "bottom_sensor_threshold": "LOW",
+    "top_sensor_threshold": "HIGH"
+  },
+  "water_pump": {
+    "schedules": [
+      {"start_time": "08:00", "end_time": "10:00"},
+      {"start_time": "14:00", "end_time": "16:00"}
+    ]
+  },
+  "lights": {
+    "schedules": [
+      {"start_time": "06:00", "end_time": "08:00"},
+      {"start_time": "18:00", "end_time": "20:00"}
+    ]
+  },
+  "vent": {
+    "schedules": [
+      {"start_time": "07:00", "end_time": "09:00"},
+      {"start_time": "17:00", "end_time": "19:00"}
+    ]
+  },
+  "ph": {
+    "target_value": 6.5,
+    "check_interval_seconds": 60,
+    "adjustment_amount": 0.1,
+    "history_window": 5
+  },
+  "ec": {
+    "target_value": 1.5,
+    "daily_injection_time": "10:00",
+    "minimum_threshold_percentage": 80
+  },
+  "led_status": {
+    "working": "blue",
+    "ph_good": "green",
+    "ph_bad": "red",
+    "ec_good": "green",
+    "ec_bad": "red",
+    "tank_empty": "red",
+    "tank_full": "green"
+  }
+}
