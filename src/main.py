@@ -34,8 +34,8 @@ air_humidity_readings = []  # Store the last 5 air humidity readings
 
 def check_temperature_and_humidity():
     # Read the current air temperature and humidity from the sensors
-    air_temperature = hd.read_data("air_temperature")
-    air_humidity = hd.read_data("air_humidity")
+    air_temperature = hd.read_air_temperature()
+    air_humidity = hd.read_air_humidity()
 
     logger.info(f"Current Air Temperature: {air_temperature}°C, Current Air Humidity: {air_humidity}%")
 
@@ -59,10 +59,10 @@ def check_temperature_and_humidity():
         # Control vent based on air temperature and humidity
         if avg_air_temperature > HIGH_AIR_TEMPERATURE_THRESHOLD or avg_air_humidity > HIGH_AIR_HUMIDITY_THRESHOLD:
             logger.info("Average air temperature or humidity is high. Turning vent ON.")
-            hd.turn_on("vent")
+            hd.control_vent(True)
         elif avg_air_temperature < LOW_AIR_TEMPERATURE_THRESHOLD and avg_air_humidity < LOW_AIR_HUMIDITY_THRESHOLD:
             logger.info("Average air temperature and humidity are low. Turning vent OFF.")
-            hd.turn_off("vent")
+            hd.control_vent(False)
         else:
             logger.info("Air temperature and humidity are in the normal range. Keeping vent OFF.")
     else:
@@ -87,8 +87,8 @@ def control_pump(pump_name, duration):
 def check_ph_and_ec():
     global last_injection_time
     # Read the current pH, EC, and water temperature from the sensors
-    ph = hd.read_data("ph")
-    ec = hd.read_data("ec")
+    ph = hd.read_ph_value()
+    ec = hd.read_ec_value()
     logger.info(f"Current pH: {ph}, Current EC: {ec} mS/cm")
     # Add the new readings to the respective lists
     ph_readings.append(ph)
@@ -160,12 +160,12 @@ def check_light_schedule():
     # Check if the current time is within the grace period to turn the light on or off and If light is not already on
     if light_on_time <= current_time <= light_on_time + timedelta(minutes=GRACE_PERIOD) and not is_light_on:
         logger.info("Turning light ON.")
-        hd.turn_on("light")  # Assuming "light" is the ID for the light
+        hd.control_light(True)  # Assuming "light" is the ID for the light
         is_light_on = True  # Track light state
     # If light is currently on and light should be off
     elif light_off_time <= current_time <= light_off_time + timedelta(minutes=GRACE_PERIOD) and is_light_on:
         logger.info("Turning light OFF.")
-        hd.turn_off("light")  # Assuming "light" is the ID for the light
+        hd.control_light(False)  # Assuming "light" is the ID for the light
         is_light_on = False  # Track light state
 
 
@@ -188,17 +188,17 @@ water_filling_duration = 180  # 3 minutes of water filling time
 
 def control_water_filling_pump(duration):
     """Control the water filling pump (water valve)."""
-    hd.turn_on(WATER_VALVE_PIN)
+    hd.control_water_valve(True)
     time.sleep(duration)
-    hd.turn_off(WATER_VALVE_PIN)
+    hd.control_water_valve(False)
 
 
 def check_water_tank_and_circulation():
     global bottom_sensor_readings, water_filling_started_at, is_water_pump_on
 
     # Read the bottom and top water level sensors
-    bottom_sensor = hd.read_data(WATER_LEVEL_BOTTOM_PIN)  # 1 = low water level, 0 = high water level
-    top_sensor = hd.read_data(WATER_LEVEL_TOP_PIN)  # 1 = tank full, 0 = not full
+    bottom_sensor = hd.read_water_level_bottom_status()  # 1 = low water level, 0 = high water level
+    top_sensor = hd.read_water_level_top_status()  # 1 = tank full, 0 = not full
 
     # Add the new reading to the bottom sensor readings list
     bottom_sensor_readings.append(bottom_sensor)
@@ -216,7 +216,7 @@ def check_water_tank_and_circulation():
     # If top sensor shows full water level, turn off water filling pump
     if top_sensor == 1 and water_filling_started_at is not None:
         logger.info("Top sensor shows full water level. Turning off water filling pump.")
-        hd.turn_off(WATER_VALVE_PIN)
+        hd.control_water_valve(False)
         water_filling_started_at = None  # Reset the filling start time
 
     # Stop pump if filling duration has elapsed
@@ -224,7 +224,7 @@ def check_water_tank_and_circulation():
             datetime.now() - water_filling_started_at).seconds >= water_filling_duration:
         if all(sensor == 1 for sensor in bottom_sensor_readings):
             logger.info("Filling duration complete. Turning off water filling pump.")
-            hd.turn_off(WATER_VALVE_PIN)
+            hd.control_water_valve(False)
             water_filling_started_at = None  # Reset filling time
         else:
             logger.info("Filling stopped early due to water level change.")
@@ -239,14 +239,14 @@ def check_water_tank_and_circulation():
         # If water pump is off and within the schedule, turn it on
         if not is_water_pump_on and pump_on_time <= current_time <= pump_off_time:
             logger.info("It's time to turn on the water pump as per the schedule.")
-            hd.turn_on(WATER_VALVE_PIN)
+            hd.control_water_valve(True)
             is_water_pump_on = True
 
         # If water pump is on and past the grace period, turn it off
         elif water_filling_started_at is not None:
             if is_water_pump_on and (datetime.now() - water_filling_started_at).seconds >= GRACE_PERIOD * 60:
                 logger.info("Water pump has been on past grace period. Turning it off.")
-                hd.turn_off(WATER_VALVE_PIN)
+                hd.control_water_valve(False)
                 is_water_pump_on = False
 
     else:
@@ -256,7 +256,7 @@ def check_water_tank_and_circulation():
         elif water_filling_started_at is not None and (
                 datetime.now() - water_filling_started_at).seconds >= GRACE_PERIOD * 60:
             logger.info("Water level is low past grace period. Turning off water pump.")
-            hd.turn_off(WATER_VALVE_PIN)
+            hd.control_water_valve(False)
             is_water_pump_on = False
 
 
